@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>10.1.5 Serbest Düşme Simülasyonu</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      /* Light Theme Colors */
+      --bg-primary: #f4f7fb;
+      --bg-secondary: #ffffff;
+      --text-primary: #333333;
+      --text-secondary: #666666;
+      --accent-primary: #1e88e5;
+      --accent-secondary: #42a5f5;
+      --accent-danger: #ef5350;
+      --border-color: #e0e0e0;
+      --border-light: #d1eaff;
+      --bg-light: #f9f9f9;
+      --bg-very-light: #f4fbff;
+      --shadow: 0 2px 10px #eee;
+      --note-bg: #e3f2fd;
+      --note-text: #215278;
+    }
+
+    [data-theme="dark"] {
+      /* Dark Theme Colors */
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --text-primary: #f1f5f9;
+      --text-secondary: #cbd5e1;
+      --accent-primary: #3b82f6;
+      --accent-secondary: #42a5f5;
+      --accent-danger: #ef4444;
+      --border-color: #334155;
+      --border-light: #475569;
+      --bg-light: #334155;
+      --bg-very-light: #1e293b;
+      --shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+      --note-bg: #1e3a8a;
+      --note-text: #dbeafe;
+    }
+
+    body { 
+      font-family: Arial, sans-serif; 
+      background: var(--bg-primary); 
+      color: var(--text-primary);
+      transition: all 0.3s ease;
+    }
+    
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      box-shadow: var(--shadow);
+    }
+    
+    .header h2 {
+      margin: 0;
+      color: var(--text-primary);
+    }
+    
+    .theme-toggle {
+      background: var(--bg-very-light);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+    
+    .theme-toggle:hover {
+      background: var(--accent-primary);
+      color: white;
+      border-color: var(--accent-primary);
+    }
+    
+    .note { 
+      background: var(--note-bg); 
+      border-left: 5px solid var(--accent-secondary); 
+      padding: 12px 15px; 
+      border-radius: 7px; 
+      margin: 18px auto 25px auto; 
+      max-width: 1100px; 
+      font-size: 16px; 
+      color: var(--note-text);
+    }
+    
+    .container { display: flex; gap: 32px; margin: 0 auto 40px auto; max-width: 1180px; }
+    .controls, .outputs { 
+      background: var(--bg-secondary); 
+      border-radius: 15px; 
+      padding: 25px; 
+      box-shadow: var(--shadow); 
+      transition: all 0.3s ease;
+    }
+    .controls { min-width: 320px; flex-shrink: 0; }
+    .outputs { flex: 1; }
+    label { font-size: 15px; margin-bottom: 7px; display: block; color: var(--text-primary); }
+    input[type="number"] { 
+      width: 100px; 
+      margin-bottom: 16px; 
+      padding: 4px 7px; 
+      border: 1px solid var(--border-color); 
+      border-radius: 5px;
+      background: var(--bg-light);
+      color: var(--text-primary);
+    }
+    button { 
+      margin: 9px 7px 14px 0; 
+      padding: 9px 20px; 
+      font-size: 15px; 
+      border-radius: 6px; 
+      border: none; 
+      cursor: pointer; 
+      transition: all 0.2s ease;
+    }
+    button#start { background: var(--accent-primary); color: #fff; }
+    button#start:hover { background: #1565c0; transform: translateY(-1px); }
+    button#reset { background: var(--accent-danger); color: #fff; }
+    button#reset:hover { background: #d32f2f; transform: translateY(-1px); }
+    button#showData { 
+      background: #8b5cf6; 
+      color: #fff; 
+      padding: 9px 20px; 
+      border-radius: 6px; 
+      border: none;
+    }
+    button#showData:hover { background: #7c3aed; transform: translateY(-1px); }
+    
+    .status { 
+      padding: 8px 14px; 
+      background: #fff3cd; 
+      color: #856404; 
+      border-radius: 7px; 
+      margin-bottom: 16px; 
+      border: 1px solid #ffeeba; 
+      font-size: 15px;
+    }
+    .live-data { 
+      margin-top: 16px; 
+      font-size: 15px; 
+      border: 1px solid var(--border-light); 
+      background: var(--bg-very-light); 
+      border-radius: 7px; 
+      padding: 12px 15px;
+      color: var(--text-primary);
+    }
+    .live-data span { display: block; margin-bottom: 4px; }
+    canvas.p5Canvas { 
+      border-radius: 13px; 
+      box-shadow: 0 0 6px var(--border-color); 
+      margin-top: 7px;
+    }
+    .anim-label { 
+      font-size: 13px; 
+      background: var(--bg-light); 
+      border-radius: 4px; 
+      padding: 3px 9px; 
+      display: inline-block; 
+      margin: 8px 0 0 0;
+      color: var(--text-secondary);
+    }
+    .panel-group { 
+      display: flex; 
+      flex-direction: column; 
+      gap: 8px; 
+      margin-top: 17px;
+      align-items: flex-start;
+    }
+    .veri-panel { 
+      background: var(--bg-very-light); 
+      border: 1px solid var(--border-light); 
+      border-radius: 9px; 
+      padding: 13px 16px; 
+      font-size: 15px; 
+      min-width: 220px; 
+      max-width: 100%;
+      color: var(--text-primary);
+    }
+    .veri-panel span { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center;
+      margin-bottom: 5px; 
+    }
+    .veri-panel span b { 
+      font-weight: bold; 
+      color: var(--text-primary);
+    }
+    .veri-panel span .value { 
+      color: var(--text-primary);
+    }
+    .section-title { 
+      font-weight: bold; 
+      margin-bottom: 8px; 
+      font-size: 16px; 
+      color: var(--text-primary);
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 4px;
+    }
+    .graphs { display: flex; gap: 30px; margin-top: 22px; }
+    .graph-wrap { 
+      background: var(--bg-secondary); 
+      border: 1px solid var(--border-color); 
+      border-radius: 7px; 
+      padding: 10px 7px; 
+      width: 320px;
+      transition: all 0.3s ease;
+    }
+    .graph-title { font-weight: bold; margin-bottom: 4px; font-size: 14px; color: var(--text-primary); }
+    .values-table { 
+      margin: 26px 0 0 0; 
+      width: 100%; 
+      border-collapse: collapse; 
+      font-size: 15px; 
+      background: var(--bg-light);
+      color: var(--text-primary);
+    }
+    .values-table th, .values-table td { 
+      border: 1px solid var(--border-color); 
+      padding: 5px 9px; 
+    }
+    .values-table th { 
+      background: var(--note-bg);
+      color: var(--note-text);
+    }
+    .kayit-title { font-weight: bold; margin: 28px 0 6px 0; color: var(--text-primary); }
+    
+    .controls-disabled {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+    
+    .pulse-animation {
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(139, 92, 246, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(139, 92, 246, 0);
+      }
+    }
+    
+    /* Modal Styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+    }
+    
+    .modal.show {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .modal-content {
+      background: var(--bg-secondary);
+      border-radius: 15px;
+      box-shadow: var(--shadow);
+      width: 90%;
+      max-width: 1000px;
+      max-height: 90vh;
+      overflow: hidden;
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.5rem 2rem;
+      border-bottom: 1px solid var(--border-color);
+      background: var(--bg-very-light);
+    }
+    
+    .modal-header h3 {
+      margin: 0;
+      color: var(--text-primary);
+    }
+    
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 2rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+    
+    .modal-close:hover {
+      background: var(--accent-danger);
+      color: white;
+    }
+    
+    .modal-body {
+      padding: 2rem;
+      max-height: calc(90vh - 120px);
+      overflow-y: auto;
+    }
+    
+    .pagination-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding: 0.75rem 1rem;
+      background: var(--bg-very-light);
+      border-radius: 7px;
+      border: 1px solid var(--border-color);
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+    
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    
+    .page-btn {
+      padding: 0.5rem 0.75rem;
+      background: var(--bg-very-light);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+    
+    .page-btn:hover {
+      background: var(--accent-primary);
+      color: white;
+      border-color: var(--accent-primary);
+    }
+    
+    .page-btn.active {
+      background: var(--accent-primary);
+      color: white;
+      border-color: var(--accent-primary);
+    }
+    
+    .page-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .modal-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--bg-light);
+      border-radius: 7px;
+      overflow: hidden;
+    }
+    
+    .modal-table th,
+    .modal-table td {
+      border: 1px solid var(--border-color);
+      padding: 8px 12px;
+      text-align: left;
+    }
+    
+    .modal-table th {
+      background: var(--note-bg);
+      color: var(--note-text);
+      font-weight: bold;
+    }
+    
+    .modal-table td {
+      color: var(--text-primary);
+    }
+    
+    @media (max-width: 900px) {
+      .container { flex-direction: column;}
+      .outputs { max-width: 100%;}
+      .graphs { flex-direction: column;}
+      .graph-wrap { width: 100%;}
+      .panel-group { 
+        width: 100%; 
+        align-items: flex-start; 
+        margin-top: 10px;
+      }
+      .veri-panel { 
+        width: 100%; 
+        box-sizing: border-box;
+      }
+      .veri-panel span { 
+        width: 100%; 
+        box-sizing: border-box;
+      }
+      .header {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+      }
+      /* Outputs içindeki flex container'i mobilde dikey yap */
+      .outputs > div[style*="display:flex"] {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <h2>10.1.5 Serbest Düşme Simülasyonu</h2>
+    <button class="theme-toggle" id="themeToggle">
+      <span id="themeIcon">🌙</span>
+      <span id="themeText">Dark</span>
+    </button>
+  </header>
+  
+  <div class="note">
+    <b>Not:</b> Bu simülasyon, düşey düzlemde serbest bırakılan veya ilk hızı farklı olan cisimlerin hareketlerini incelemek amacıyla tasarlanmıştır. Öğrenciler, serbest düşme hareketine ait hız, ivme, konum, zaman ve yer değiştirme değişkenlerini gözlemleyebilir; bu değişkenler arasındaki ilişkileri analiz ederek verileri kaydedebilir.
+  </div>
+  
+  <div class="container">
+    <div class="controls">
+      <div class="status" id="status">Simülasyon Hazır</div>
+      <label>Başlangıç Yüksekliği (m, 0 = yerde):<br><input id="initPos" type="number" value="15" min="0" max="1000"></label>
+      <label>İlk Hız (m/s, + yukarı, - aşağı):<br><input id="initVel" type="number" value="10" step="0.1"></label>
+      <label>Yerçekimi İvmesi (m/s²):<br><input id="g" type="number" value="10" min="1" max="50" step="0.1"></label>
+      <label>Veri Kayıt Aralığı (saniye):<br><input id="dt" type="number" value="0.2" step="0.01" min="0.01" max="2"></label>
+      <button id="start">Başlat</button>
+      <button id="reset">Sıfırla</button>
+      <button id="showData">📊 Kaydedilen Verileri Gör</button>
+      <div class="section-title">📊 Canlı Veriler</div>
+      <div class="live-data" id="liveData"></div>
+    </div>
+    
+    <div class="outputs">
+      <div style="display:flex;align-items:flex-start;gap:15px;">
+        <div>
+          <div id="sketch-holder"></div>
+          <span class="anim-label">Koordinat Sistemi: ↑ Yukarı: Pozitif (+), ↓ Aşağı: Negatif (-)</span>
+        </div>
+        <div class="panel-group">
+          <div class="section-title">📈 Hesaplanan Veriler</div>
+          <div class="veri-panel" id="veriPanel"></div>
+        </div>
+      </div>
+      <div class="graphs">
+        <div class="graph-wrap">
+          <div class="graph-title">Konum - Zaman Grafiği</div>
+          <canvas id="posChart" width="290" height="180"></canvas>
+        </div>
+        <div class="graph-wrap">
+          <div class="graph-title">Hız - Zaman Grafiği</div>
+          <canvas id="velChart" width="290" height="180"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Modal -->
+  <div id="dataModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>📋 Kaydedilen Veriler</h3>
+        <button class="modal-close" id="closeModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="pagination-info">
+          <span id="dataCount"></span>
+          <span id="pageInfo"></span>
+        </div>
+        <table class="modal-table" id="modalDataTable">
+          <thead>
+            <tr>
+              <th>Zaman (s)</th>
+              <th>Konum (m)</th>
+              <th>Hız (m/s)</th>
+              <th>İvme (m/s²)</th>
+              <th>Yer Değiştirme (m)</th>
+            </tr>
+          </thead>
+          <tbody id="modalTableBody"></tbody>
+        </table>
+        <div class="pagination">
+          <button class="page-btn" id="prevPage" disabled>◀ Önceki</button>
+          <span id="pageNumbers"></span>
+          <button class="page-btn" id="nextPage">Sonraki ▶</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Theme Management
+    const themeToggle = document.getElementById('themeToggle');
+    const themeIcon = document.getElementById('themeIcon');
+    const themeText = document.getElementById('themeText');
+
+    function setTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('theme', theme);
+      updateThemeToggle(theme);
+      
+      // Update chart colors
+      if (typeof posChart !== "undefined" && typeof velChart !== "undefined") {
+        const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim();
+        const secondaryColor = getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim();
+        
+        posChart.options.scales.x.title.color = textColor;
+        posChart.options.scales.y.title.color = textColor;
+        posChart.options.scales.x.ticks.color = secondaryColor;
+        posChart.options.scales.y.ticks.color = secondaryColor;
+        posChart.update();
+        
+        velChart.options.scales.x.title.color = textColor;
+        velChart.options.scales.y.title.color = textColor;
+        velChart.options.scales.x.ticks.color = secondaryColor;
+        velChart.options.scales.y.ticks.color = secondaryColor;
+        velChart.update();
+      }
+    }
+
+    function updateThemeToggle(theme) {
+      if (theme === 'dark') {
+        themeIcon.textContent = '☀️';
+        themeText.textContent = '';
+      } else {
+        themeIcon.textContent = '🌙';
+        themeText.textContent = '';
+      }
+    }
+
+    function initTheme() {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme) {
+        setTheme(savedTheme);
+      } else {
+        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        setTheme(systemTheme);
+      }
+    }
+
+    themeToggle.addEventListener('click', () => {
+      const currentTheme = document.documentElement.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      setTheme(newTheme);
+    });
+
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+      if (!localStorage.getItem('theme')) {
+        setTheme(e.matches ? 'dark' : 'light');
+      }
+    });
+
+    // Control management
+    function disableControls(disabled) {
+      const controlsForm = document.querySelector('.controls');
+      const inputElements = controlsForm.querySelectorAll('input');
+      const startBtn = document.getElementById('start');
+      const resetBtn = document.getElementById('reset');
+      const showDataBtn = document.getElementById('showData');
+      
+      if (disabled) {
+        controlsForm.classList.add('controls-disabled');
+        inputElements.forEach(input => input.disabled = true);
+        startBtn.disabled = true;
+        showDataBtn.disabled = true;
+      } else {
+        controlsForm.classList.remove('controls-disabled');
+        inputElements.forEach(input => input.disabled = false);
+        startBtn.disabled = false;
+        showDataBtn.disabled = false;
+      }
+    }
+
+    // Original Physics Simulation Code (unchanged)
+    let y0 = 15, v0 = 10, g = 10, dt = 0.2;
+    let t = 0, y = 15, v = 10, isRunning = false, data = [], lastRecordTime = 0, simFinished = false;
+    let radius = 28, h_px = 340, min_y = 0, max_y = 15, yerDegistirme = 0;
+    let timeToGround = 0, vSon = 0, maxHeight = 0;
+    let posChart, velChart;
+    let calculatedTime = 0;
+    let ballRadius = 28;
+
+    function setup() {
+      let cnv = createCanvas(300, h_px);
+      cnv.parent('sketch-holder');
+      frameRate(60);
+      setupCharts();
+      resetSim();
+      initTheme();
+      disableControls(false);
+    }
+
+    function draw() {
+      background(150, 200, 250);
+      drawScale();
+      drawBall();
+      drawLinesAndLabels();
+
+      // DÜZELTME: Eğer yükseklik 0 ve hız da 0 ise simülasyon hiç ilerlemesin (ama biri sıfır değilse başlasın)
+      if (Math.abs(y0) < 1e-6 && Math.abs(v0) < 1e-6) return;
+
+      if(isRunning && (y > 0 || (y === 0 && v0 > 0) || (y0 === 0 && v0 === 0 && t === 0))) {
+        t += 1/60;
+        y = y0 + v0*t + 0.5*(-g)*t*t;
+        v = v0 + (-g)*t;
+        yerDegistirme = Math.abs(y0 - y);
+
+        if(y < 0 || (Math.abs(y0) < 1e-6 && v0 === 0 && t < 1/55)) { 
+          t = calculatedTime;
+          y = 0; 
+          v = v0 + (-g)*t;
+          yerDegistirme = Math.abs(y0);
+          isRunning = false;
+          simFinished = true;
+          document.getElementById("status").innerText = "Simülasyon tamamlandı.";
+          
+          // Re-enable controls
+          disableControls(false);
+          
+          // Add pulse animation to data button
+          document.getElementById('showData').classList.add('pulse-animation');
+          
+          // Mobile scroll to data button
+          if (window.innerWidth <= 768) {
+            setTimeout(() => {
+              document.getElementById('showData').scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center' 
+              });
+            }, 500);
+          }
+          
+          addFinalData();
+        } else if(data.length === 0 || t - lastRecordTime >= dt - 1e-4) {
+          data.push({
+            t: roundSmart(t), 
+            y: roundSmart(y), 
+            v: roundSmart(v), 
+            a: -g, 
+            dy: roundSmart(yerDegistirme)
+          });
+          lastRecordTime = t;
+          updateTable();
+          plotCharts();
+        }
+        updateLiveData();
+        updateVeriPanel();
+      }
+    }
+
+    function drawScale() {
+      let range = max_y - min_y;
+      let step = Math.max(1, Math.ceil(range / 10));
+      stroke(90); strokeWeight(1);
+      for(let i=min_y; i<=max_y+0.01; i+=step){
+        let iVal = max_y - (i - min_y);
+        let ypix = map(iVal, min_y, max_y, height-16, 26);
+        line(18, ypix, 34, ypix);
+        noStroke(); fill(80); textAlign(LEFT, CENTER);
+        text(Math.round(iVal) + " m", 40, ypix);
+      }
+      // Maksimum yükseklik çizgisi ve etiketi
+      let yPixMax = map(max_y, min_y, max_y, height-16-radius/2, 26+radius/2);
+      stroke(0,120,255); strokeWeight(2); drawingContext.setLineDash([5,5]);
+      line(48, yPixMax, width-36, yPixMax);
+      drawingContext.setLineDash([]);
+      noStroke(); fill(0,60,180);
+      textAlign(CENTER, BOTTOM);
+      textSize(18);
+      let label = Math.round(max_y) + " m (maksimum yükseklik)";
+      if(label.length > 25) textSize(14);
+      text(label, width/2, Math.max(yPixMax-18, 14));
+      textSize(12);
+    }
+
+    function drawBall() {
+      let maxRadius = 28;
+      let yPix = map(y, min_y, max_y, height-16-maxRadius/2, 26+maxRadius/2);
+      let showRadius = maxRadius;
+      if (yPix < 26+maxRadius/2) {
+        showRadius = Math.max(12, maxRadius - (26+maxRadius/2-yPix)/3);
+        yPix = 26+showRadius/2;
+      }
+      fill(220,40,40); ellipse(width/2, yPix, showRadius, showRadius);
+    }
+
+    function drawLinesAndLabels() {
+      let yPix0 = map(y0, min_y, max_y, height-16-radius/2, 26+radius/2);
+      stroke(60,60,60); strokeWeight(2); drawingContext.setLineDash([5,5]);
+      line(48, yPix0, width-36, yPix0);
+      drawingContext.setLineDash([]);
+      fill(40,40,40); noStroke();
+      textAlign(LEFT, CENTER);
+      textSize(13);
+      text(Math.round(y0) + " m (başlangıç)", width-94, yPix0-13);
+
+      let yPixGround = map(0, min_y, max_y, height-16-radius/2, 26+radius/2);
+      stroke(80,40,30); strokeWeight(3); drawingContext.setLineDash([]);
+      line(28, yPixGround, width-28, yPixGround);
+      fill(80,40,30); textSize(14); textAlign(RIGHT, CENTER);
+      text("yer", width-24, yPixGround+13);
+      textSize(12);
+    }
+
+    function solveQuadratic(y0, v0, g){
+      let a = 0.5 * g, b = v0, c = y0;
+      if (Math.abs(a) < 1e-8) return -c / b;
+      let D = b * b - 4 * a * c;
+      if (D < 0) return 0;
+      let t1 = (-b + Math.sqrt(D)) / (2 * a);
+      let t2 = (-b - Math.sqrt(D)) / (2 * a);
+      let ts = [t1, t2].filter(T => T > 1e-6);
+      if(ts.length == 0) return 0;
+      return Math.max(...ts);
+    }
+
+    function hesaplamalar(){
+      calculatedTime = solveQuadratic(y0, v0, -g);
+      timeToGround = calculatedTime;
+      vSon = v0 + (-g)*calculatedTime;
+      if(v0 > 0){
+        let tMax = v0/g;
+        maxHeight = y0 + v0*tMax + 0.5*(-g)*tMax*tMax;
+      } else {
+        maxHeight = y0;
+      }
+      min_y = 0;
+      max_y = Math.ceil(Math.max(y0, maxHeight, 1)); 
+    }
+
+    function updateLiveData(){
+      let liveDiv = document.getElementById("liveData");
+      liveDiv.innerHTML = `
+        <span><b>Konum:</b> ${roundSmart(y)} m</span>
+        <span><b>Hız:</b> ${roundSmart(v)} m/s</span>
+        <span><b>İvme:</b> ${-g} m/s²</span>
+        <span><b>Yer Değiştirme:</b> ${roundSmart(yerDegistirme)} m</span>
+        <span><b>Zaman:</b> ${roundSmart(t)} s</span>
+      `;
+    }
+
+    function updateVeriPanel(){
+      hesaplamalar();
+      document.getElementById("veriPanel").innerHTML = `
+        <span><b>Konum:</b> <span class="value">${roundSmart(y)} m</span></span>
+        <span><b>Hız:</b> <span class="value">${roundSmart(v)} m/s</span></span>
+        <span><b>İvme:</b> <span class="value">${-g} m/s²</span></span>
+        <span><b>Yer Değiştirme:</b> <span class="value">${roundSmart(yerDegistirme)} m</span></span>
+        <span><b>Zaman:</b> <span class="value">${roundSmart(t)} s</span></span>
+        <hr style="margin:8px 0;">
+        <span><b>Hesaplanan Yere Ulaşma Süresi:</b> <span class="value">${roundSmart(timeToGround)} s</span></span>
+        <span><b>Hesaplanan Son Hız:</b> <span class="value">${roundSmart(vSon)} m/s</span></span>
+        <span><b>Maksimum Yükseklik:</b> <span class="value">${roundSmart(maxHeight)} m</span></span>
+      `;
+    }
+
+    function updateTable(){
+      // Data is now displayed in modal, so we just update modal if it's open
+      if (modal.classList.contains('show')) {
+        updateModalTable();
+      }
+    }
+
+    function addFinalData(){
+      let vfin = v0 + (-g)*calculatedTime;
+      let yfin = 0;
+      let dyfin = y0;
+      if(data.length === 0 || Math.abs(data[data.length-1].t - calculatedTime) > 1e-4){
+        data.push({
+          t: roundSmart(calculatedTime),
+          y: roundSmart(yfin),
+          v: roundSmart(vfin),
+          a: -g,
+          dy: roundSmart(dyfin)
+        });
+        updateTable();
+        plotCharts();
+      }
+    }
+
+    function setupCharts() {
+      const ctx1 = document.getElementById('posChart').getContext('2d');
+      posChart = new Chart(ctx1, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            label: 'Konum (m)',
+            data: [],
+            borderColor: '#e53935',
+            backgroundColor: 'rgba(229,57,53,0.2)',
+            pointRadius: 4,
+            pointHoverRadius: 7,
+            tension: 0.25,
+            fill: false
+          }]
+        },
+        options: {
+          responsive: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { enabled: true, mode: 'nearest', intersect: false }
+          },
+          scales: {
+            x: { 
+              title: { display: true, text: 'Zaman (s)', color: getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim() } 
+            },
+            y: { 
+              title: { display: true, text: 'Konum (m)', color: getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim() }, 
+              beginAtZero: true 
+            }
+          }
+        }
+      });
+      const ctx2 = document.getElementById('velChart').getContext('2d');
+      velChart = new Chart(ctx2, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            label: 'Hız (m/s)',
+            data: [],
+            borderColor: '#1976d2',
+            backgroundColor: 'rgba(25,118,210,0.2)',
+            pointRadius: 4,
+            pointHoverRadius: 7,
+            tension: 0.1,
+            fill: false
+          }]
+        },
+        options: {
+          responsive: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { enabled: true, mode: 'nearest', intersect: false }
+          },
+          scales: {
+            x: { title: { display: true, text: 'Zaman (s)', color: getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim() } },
+            y: { title: { display: true, text: 'Hız (m/s)', color: getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim() } }
+          }
+        }
+      });
+    }
+
+    function plotCharts() {
+      if (typeof posChart === "undefined" || typeof velChart === "undefined" || !posChart || !velChart) return;
+      // Eğer yükseklik 0 ve hız da 0 ise sadece ilk veri noktasını göster
+      if (Math.abs(y0) < 1e-6 && Math.abs(v0) < 1e-6) {
+        let xLabels = [Number(0).toFixed(2).replace('.', ',')];
+        let posData = [roundSmart(0)];
+        let velData = [roundSmart(0)];
+        posChart.data.labels = xLabels;
+        posChart.data.datasets[0].data = posData;
+        posChart.update();
+        velChart.data.labels = xLabels;
+        velChart.data.datasets[0].data = velData;
+        velChart.update();
+        return;
+      }
+      if (Math.abs(y0) < 1e-6) {
+        // Eğer yükseklik sıfırsa ama hız sıfır değilse (örneğin yukarı fırlatma), ilk değer o andaki hızı göstersin
+        let xLabels = [Number(0).toFixed(2).replace('.', ',')];
+        let posData = [roundSmart(0)];
+        let velData = [roundSmart(v0)];
+        posChart.data.labels = xLabels;
+        posChart.data.datasets[0].data = posData;
+        posChart.update();
+        velChart.data.labels = xLabels;
+        velChart.data.datasets[0].data = velData;
+        velChart.update();
+      }
+      let labels = data.map(d => Number(d.t));
+      if (labels.length === 0 || Math.abs(labels[labels.length-1] - calculatedTime) > 1e-4) {
+        labels.push(Number(roundSmart(calculatedTime)));
+      }
+      let xLabels = labels.map(val => Number(val).toFixed(2).replace('.', ','));
+      let posData = data.map(d=>d.y);
+      let velData = data.map(d=>d.v);
+
+      if (Math.abs(labels[labels.length-1] - calculatedTime) < 1e-4 && data.length > 0) {
+        let vfin = v0 + (-g)*calculatedTime;
+        let yfin = 0;
+        posData.push(roundSmart(yfin));
+        velData.push(roundSmart(vfin));
+      }
+
+      posChart.data.labels = xLabels;
+      posChart.data.datasets[0].data = posData;
+      posChart.update();
+
+      velChart.data.labels = xLabels;
+      velChart.data.datasets[0].data = velData;
+      velChart.update();
+    }
+
+    document.getElementById("start").onclick = function(){
+      // Disable controls during measurement
+      disableControls(true);
+      
+      y0 = parseFloat(document.getElementById("initPos").value);
+      v0 = parseFloat(document.getElementById("initVel").value);
+      g = parseFloat(document.getElementById("g").value);
+      dt = parseFloat(document.getElementById("dt").value);
+      hesaplamalar();
+      resetSim();
+      // DÜZELTME: Yalnızca her ikisi birden sıfırsa çalışmasın
+      isRunning = (Math.abs(y0) >= 1e-6 || Math.abs(v0) >= 1e-6);
+      document.getElementById("status").innerText = isRunning ? "Simülasyon çalışıyor..." : "Simülasyon tamamlandı.";
+      
+      // Mobile scroll to sketch-holder area
+      if (window.innerWidth <= 768) {
+        setTimeout(() => {
+          // Scroll to sketch-holder's parent container for better positioning
+          const sketchHolder = document.getElementById('sketch-holder');
+          if (sketchHolder) {
+            const container = sketchHolder.parentElement;
+            container.scrollIntoView({ 
+              behavior: 'smooth', 
+              block: 'start',
+              inline: 'nearest'
+            });
+          }
+        }, 100);
+      }
+    };
+
+    document.getElementById("reset").onclick = function(){
+      resetSim();
+      document.getElementById("status").innerText = "Simülasyon Hazır";
+      
+      // Re-enable controls
+      disableControls(false);
+      
+      // Remove pulse animation
+      document.getElementById('showData').classList.remove('pulse-animation');
+    };
+
+    function resetSim(){
+      hesaplamalar();
+      t = 0; y = y0; v = v0; yerDegistirme = 0; simFinished = false;
+      data = [];
+      // DÜZELTME: Yalnızca her ikisi birden sıfırsa, sadece bir nokta kaydedilsin
+      if (Math.abs(y0) < 1e-6 && Math.abs(v0) < 1e-6) {
+        data.push({
+          t: roundSmart(0), 
+          y: roundSmart(0), 
+          v: roundSmart(0), 
+          a: -g, 
+          dy: roundSmart(0)
+        });
+        updateTable();
+        plotCharts();
+        updateLiveData();
+        updateVeriPanel();
+        redraw();
+        isRunning = false;
+        simFinished = true;
+        document.getElementById("status").innerText = "Simülasyon tamamlandı.";
+        
+        // Re-enable controls
+        disableControls(false);
+        
+        // Add pulse animation to data button
+        document.getElementById('showData').classList.add('pulse-animation');
+        return;
+      }
+      // Diğer durumlarda
+      data.push({
+        t: roundSmart(0), 
+        y: roundSmart(y0), 
+        v: roundSmart(v0), 
+        a: -g, 
+        dy: roundSmart(0)
+      });
+      lastRecordTime = 0;
+      updateTable();
+      plotCharts();
+      updateLiveData();
+      updateVeriPanel();
+      redraw();
+    }
+
+    function roundSmart(val){
+      let rounded = Math.round(val*100)/100;
+      if(Math.abs(rounded - Math.round(rounded)) < 1e-6)
+        return Math.round(rounded) + ".00";
+      else if(Math.abs(rounded*10 - Math.round(rounded*10)) < 1e-6)
+        return rounded.toFixed(1);
+      else
+        return rounded.toFixed(2);
+    }
+
+    // Modal and Pagination Management
+    const modal = document.getElementById('dataModal');
+    const showDataBtn = document.getElementById('showData');
+    const closeModalBtn = document.getElementById('closeModal');
+    const modalTableBody = document.getElementById('modalTableBody');
+    const dataCount = document.getElementById('dataCount');
+    const pageInfo = document.getElementById('pageInfo');
+    const prevPageBtn = document.getElementById('prevPage');
+    const nextPageBtn = document.getElementById('nextPage');
+    const pageNumbers = document.getElementById('pageNumbers');
+
+    let currentPage = 1;
+    const itemsPerPage = 10;
+
+    function openModal() {
+      modal.classList.add('show');
+      document.body.style.overflow = 'hidden';
+      updateModalTable();
+      
+      // Stop pulse animation when modal is opened
+      document.getElementById('showData').classList.remove('pulse-animation');
+    }
+
+    function closeModal() {
+      modal.classList.remove('show');
+      document.body.style.overflow = 'auto';
+    }
+
+    function updateModalTable() {
+      const totalItems = data.length;
+      const totalPages = Math.ceil(totalItems / itemsPerPage);
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+      const pageData = data.slice(startIndex, endIndex);
+
+      // Update table body
+      modalTableBody.innerHTML = '';
+      for (let row of pageData) {
+        let tr = `<tr>
+          <td>${row.t}</td>
+          <td>${row.y}</td>
+          <td>${row.v}</td>
+          <td>${row.a}</td>
+          <td>${row.dy}</td>
+        </tr>`;
+        modalTableBody.innerHTML += tr;
+      }
+
+      // Update pagination info
+      dataCount.textContent = `Toplam: ${totalItems} kayıt`;
+      pageInfo.textContent = `Sayfa ${currentPage} / ${totalPages} (${startIndex + 1}-${endIndex})`;
+
+      // Update pagination buttons
+      prevPageBtn.disabled = currentPage === 1;
+      nextPageBtn.disabled = currentPage === totalPages;
+
+      // Update page numbers
+      updatePageNumbers(totalPages);
+    }
+
+    function updatePageNumbers(totalPages) {
+      pageNumbers.innerHTML = '';
+      const maxVisible = 5;
+      let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+      let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+
+      if (endPage - startPage < maxVisible - 1) {
+        startPage = Math.max(1, endPage - maxVisible + 1);
+      }
+
+      for (let i = startPage; i <= endPage; i++) {
+        const pageBtn = document.createElement('button');
+        pageBtn.className = 'page-btn' + (i === currentPage ? ' active' : '');
+        pageBtn.textContent = i;
+        pageBtn.onclick = () => goToPage(i);
+        pageNumbers.appendChild(pageBtn);
+      }
+    }
+
+    function goToPage(page) {
+      currentPage = page;
+      updateModalTable();
+    }
+
+    function nextPage() {
+      const totalPages = Math.ceil(data.length / itemsPerPage);
+      if (currentPage < totalPages) {
+        currentPage++;
+        updateModalTable();
+      }
+    }
+
+    function prevPage() {
+      if (currentPage > 1) {
+        currentPage--;
+        updateModalTable();
+      }
+    }
+
+    // Event listeners
+    showDataBtn.addEventListener('click', openModal);
+    closeModalBtn.addEventListener('click', closeModal);
+    nextPageBtn.addEventListener('click', nextPage);
+    prevPageBtn.addEventListener('click', prevPage);
+
+    // Close modal when clicking outside
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      if (modal.classList.contains('show')) {
+        if (e.key === 'Escape') {
+          closeModal();
+        } else if (e.key === 'ArrowLeft') {
+          prevPage();
+        } else if (e.key === 'ArrowRight') {
+          nextPage();
+        }
+      }
+    });
+  </script>
+</body>
+</html>
