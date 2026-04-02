@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -87,13 +88,14 @@
       border-left: 5px solid var(--accent-secondary); 
       padding: 12px 15px; 
       border-radius: 7px; 
-      margin: 18px auto 25px auto; 
+      margin: 6px ; 
       max-width: 1100px; 
       font-size: 16px; 
       color: var(--note-text);
+	  
     }
     
-    .container { display: flex; gap: 32px; margin: 0 auto 40px auto; max-width: 1180px; }
+    .container { display: flex; gap: 32px; margin: 50 auto 40px auto; max-width: 1180px; }
     .controls, .outputs { 
       background: var(--bg-secondary); 
       border-radius: 15px; 
@@ -103,7 +105,7 @@
     }
     .controls { min-width: 320px; flex-shrink: 0; }
     .outputs { flex: 1; }
-    label { font-size: 15px; margin-bottom: 7px; display: block; color: var(--text-primary); }
+    label { font-size: 18px; margin-bottom: 7px; display: block; color: var(--text-primary); }
     input[type="number"] { 
       width: 100px; 
       margin-bottom: 16px; 
@@ -146,13 +148,16 @@
     }
     .live-data { 
       margin-top: 16px; 
-      font-size: 15px; 
+      font-size: 18px; 
       border: 1px solid var(--border-light); 
       background: var(--bg-very-light); 
       border-radius: 7px; 
       padding: 12px 15px;
       color: var(--text-primary);
     }
+	
+	
+
     .live-data span { display: block; margin-bottom: 4px; }
     canvas.p5Canvas { 
       border-radius: 13px; 
@@ -722,10 +727,10 @@
       text(Math.round(y0) + " m (başlangıç)", width-94, yPix0-13);
 
       let yPixGround = map(0, min_y, max_y, height-16-radius/2, 26+radius/2);
-      stroke(80,40,30); strokeWeight(3); drawingContext.setLineDash([]);
+      stroke(0,0,0); strokeWeight(0.5); ([]);
       line(28, yPixGround, width-28, yPixGround);
-      fill(80,40,30); textSize(14); textAlign(RIGHT, CENTER);
-      text("yer", width-24, yPixGround+13);
+      fill(0,0,0); textSize(16); textAlign(CENTER, CENTER);
+      text("Yer", width-24, yPixGround+13);
       textSize(12);
     }
 
@@ -805,69 +810,117 @@
       }
     }
 
-    function setupCharts() {
-      const ctx1 = document.getElementById('posChart').getContext('2d');
-      posChart = new Chart(ctx1, {
-        type: 'line',
-        data: {
-          labels: [],
-          datasets: [{
-            label: 'Konum (m)',
-            data: [],
-            borderColor: '#e53935',
-            backgroundColor: 'rgba(229,57,53,0.2)',
-            pointRadius: 4,
-            pointHoverRadius: 7,
-            tension: 0.25,
-            fill: false
-          }]
-        },
-        options: {
-          responsive: false,
-          plugins: {
-            legend: { display: false },
-            tooltip: { enabled: true, mode: 'nearest', intersect: false }
+function setupCharts() {
+  const ctx1 = document.getElementById('posChart').getContext('2d');
+
+  posChart = new Chart(ctx1, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{
+        label: 'Konum (m)',
+        data: [],
+        borderColor: '#e53935',
+        backgroundColor: 'rgba(229,57,53,0.2)',
+        pointRadius: 4,
+        pointHoverRadius: 7,
+        tension: 0.25,
+        fill: false
+      }]
+    },
+    options: {
+      responsive: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { enabled: true, mode: 'nearest', intersect: false }
+      },
+      scales: {
+        x: {
+          title: {
+            display: true,
+            text: 'Zaman (s)',
+            color: getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim(),
+            font: {
+              size: 14,
+              weight: '600'
+            }
           },
-          scales: {
-            x: { 
-              title: { display: true, text: 'Zaman (s)', color: getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim() } 
-            },
-            y: { 
-              title: { display: true, text: 'Konum (m)', color: getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim() }, 
-              beginAtZero: true 
+          ticks: {
+            font: {
+              size: 12
             }
           }
-        }
-      });
-      const ctx2 = document.getElementById('velChart').getContext('2d');
-      velChart = new Chart(ctx2, {
-        type: 'line',
-        data: {
-          labels: [],
-          datasets: [{
-            label: 'Hız (m/s)',
-            data: [],
-            borderColor: '#1976d2',
-            backgroundColor: 'rgba(25,118,210,0.2)',
-            pointRadius: 4,
-            pointHoverRadius: 7,
-            tension: 0.1,
-            fill: false
-          }]
         },
-        options: {
-          responsive: false,
-          plugins: {
-            legend: { display: false },
-            tooltip: { enabled: true, mode: 'nearest', intersect: false }
+        y: {
+          title: {
+            display: true,
+            text: 'Konum (m)',
+            color: getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim(),
+            font: {
+              size: 14,
+              weight: '600'
+            }
           },
-          scales: {
-            x: { title: { display: true, text: 'Zaman (s)', color: getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim() } },
-            y: { title: { display: true, text: 'Hız (m/s)', color: getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim() } }
-          }
+          ticks: {
+            font: {
+              size: 12
+            }
+          },
+          beginAtZero: true
         }
-      });
+      }
     }
+  });
+
+     const ctx2 = document.getElementById('velChart').getContext('2d');
+velChart = new Chart(ctx2, {
+  type: 'line',
+  data: {
+    labels: [],
+    datasets: [{
+      label: 'Hız (m/s)',
+      data: [],
+      borderColor: '#1976d2',
+      backgroundColor: 'rgba(25,118,210,0.2)',
+      pointRadius: 4,
+      pointHoverRadius: 7,
+      tension: 0.1,
+      fill: false
+    }]
+  },
+  options: {
+    responsive: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { enabled: true, mode: 'nearest', intersect: false }
+    },
+    scales: {
+      x: { 
+        title: { 
+          display: true, 
+          text: 'Zaman (s)', 
+          color: getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim(),
+          font: {
+            size: 14,
+            weight: 'bold'
+          }
+        } 
+      },
+      y: { 
+        title: { 
+          display: true, 
+          text: 'Hız (m/s)', 
+          color: getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim(),
+          font: {
+            size: 14,
+            weight: 'bold'
+          }
+        } 
+      }
+    }
+  }
+});
+}
 
     function plotCharts() {
       if (typeof posChart === "undefined" || typeof velChart === "undefined" || !posChart || !velChart) return;
